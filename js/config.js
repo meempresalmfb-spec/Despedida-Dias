@@ -44,11 +44,9 @@ window.CONFIG = {
     cronograma: [
       // { hora: "20:00", o: "Esquenta no bar" },
     ],
-    checklist: ["Documento", "Dinheiro / cartão", "Carregador", "Disposição"],
     contatos: [
       // { nome: "Lucas (organiza)", tel: "5511999999999" },
     ],
-    avisoResponsa: "Bebe com responsabilidade. Tem água e comida. Ninguém dirige bêbado — chama o Uber.",
   },
 
   // ---- Participantes (seed; também entram sozinhos pela sala) ----

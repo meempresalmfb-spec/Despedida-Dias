@@ -35,20 +35,6 @@ window.Local = (function () {
     } else cardCr.appendChild(H.el("p", { class: "muted" }, ["Cronograma a definir."]));
     root.appendChild(cardCr);
 
-    // checklist (salvo local)
-    const cardCk = H.el("div", { class: "card" }, [H.el("h2", {}, ["🎒 O que levar"])]);
-    const ck = H.el("div", { class: "checklist" });
-    const salvo = JSON.parse(localStorage.getItem("checklist") || "{}");
-    (L.checklist || []).forEach((item, i) => {
-      const id = "ck" + i;
-      const input = H.el("input", { type: "checkbox", id });
-      if (salvo[item]) input.checked = true;
-      input.addEventListener("change", () => { salvo[item] = input.checked; localStorage.setItem("checklist", JSON.stringify(salvo)); });
-      ck.appendChild(H.el("label", { for: id }, [input, document.createTextNode(item)]));
-    });
-    cardCk.appendChild(ck);
-    root.appendChild(cardCk);
-
     // contatos
     const contatos = L.contatos || [];
     if (contatos.length) {
@@ -62,9 +48,6 @@ window.Local = (function () {
       });
       root.appendChild(cardCt);
     }
-
-    // aviso responsa
-    if (L.avisoResponsa) root.appendChild(H.el("div", { class: "card" }, [H.el("div", { class: "aviso-responsa" }, ["⚠️ " + L.avisoResponsa])]));
   }
 
   function dataBonita(d) {
