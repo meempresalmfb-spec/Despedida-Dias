@@ -105,7 +105,10 @@ window.Duelo = (function () {
       const reacao = (performance.now() - t0) / 1000;
       jaMarquei = true;
       Sala.set("duelo/tempos/" + me.uid, { reacao: reacao, queima: false, ts: Date.now() });
+    } else {
+      return;
     }
+    render(); // trava o botão na hora, sem esperar o eco da rede
   }
 
   // marca t0 no frame de PINTURA do "JÁ!" (lisura §5.2)
