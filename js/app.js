@@ -19,6 +19,19 @@ window.App = (function () {
     return e;
   }
   const money = (n) => "R$ " + (Number(n) || 0).toFixed(2).replace(".", ",");
+  function namebtn(title, text, green) {
+    return el("button", { class: "namebtn" + (green ? " on" : ""), type: "button" }, [
+      el("span", {}),
+      el("p", { "data-title": title, "data-text": text || title }),
+    ]);
+  }
+  // botão de rota/caminho (pílula com pin) — pra todo link de navegação
+  function mapbtn(text, href, cls) {
+    return el("a", { class: "map-btn-wrapper" + (cls ? " " + cls : ""), href: href, target: "_blank", rel: "noopener" }, [
+      el("div", { class: "map-btn" }, [text]),
+      el("div", { class: "pinpoint" }),
+    ]);
+  }
   let toastT = null;
   function toast(msg) {
     const t = $("#toast"); t.textContent = msg; t.classList.add("show");
@@ -37,17 +50,17 @@ window.App = (function () {
   // ---------- telas ----------
   const TABS = {
     moderador: [
-      { id: "s-duelo", ic: "🎯", lbl: "Duelo" },
-      { id: "s-doses", ic: "🍺", lbl: "Doses" },
-      { id: "s-custos", ic: "💸", lbl: "Custos" },
-      { id: "s-local", ic: "📍", lbl: "Local" },
-      { id: "s-config", ic: "⚙️", lbl: "Config" },
+      { id: "s-inicio", lbl: "Início" },
+      { id: "s-jogos", lbl: "Jogos" },
+      { id: "s-custos", lbl: "Custos" },
+      { id: "s-local", lbl: "Local" },
+      { id: "s-config", lbl: "Config" },
     ],
     convidado: [
-      { id: "s-duelo", ic: "🎯", lbl: "Buzzer" },
-      { id: "s-doses", ic: "🍺", lbl: "Doses" },
-      { id: "s-custos", ic: "💸", lbl: "Custos" },
-      { id: "s-local", ic: "📍", lbl: "Local" },
+      { id: "s-inicio", lbl: "Início" },
+      { id: "s-jogos", lbl: "Jogos" },
+      { id: "s-custos", lbl: "Custos" },
+      { id: "s-local", lbl: "Local" },
     ],
   };
 
@@ -67,8 +80,12 @@ window.App = (function () {
       el("h1", {}, [ev.nome || "Despedida"]),
       el("div", { class: "sub", id: "hdr-sub" }, [contagemTxt()]),
     ]);
-    const badge = el("span", { class: "badge-papel " + (me.papel === "moderador" ? "mod" : "guest") },
-      [me.papel === "moderador" ? "MODERADOR" : (me.nome || "CONVIDADO")]);
+    const badge = el("span", {
+      class: "badge-papel trocar " + (me.papel === "moderador" ? "mod" : "guest"),
+      role: "button", tabindex: "0", title: "Trocar de modo (voltar pra tela inicial)",
+      onclick: trocarModo,
+    }, [me.papel === "moderador" ? "MODERADOR" : (me.nome || "CONVIDADO"), el("span", { class: "sw" }, [" · trocar"])]);
+    badge.addEventListener("keyup", (e) => { if (e.key === "Enter" || e.key === " ") trocarModo(); });
     hdr.appendChild(avatar); hdr.appendChild(titulo); hdr.appendChild(badge);
   }
 
@@ -80,8 +97,8 @@ window.App = (function () {
     if (isNaN(dias)) return "sala: " + Sala.codigo;
     if (dias > 1) return "faltam " + dias + " dias";
     if (dias === 1) return "é amanhã!";
-    if (dias === 0) return "é HOJE 🔥";
-    return "rolou! 🥃";
+    if (dias === 0) return "é HOJE";
+    return "rolou!";
   }
 
   function buildTabbar() {
@@ -90,7 +107,7 @@ window.App = (function () {
     bar.innerHTML = "";
     TABS[me.papel].forEach((t) => {
       bar.appendChild(el("button", { "data-target": t.id, onclick: () => show(t.id) }, [
-        el("span", { class: "ic" }, [t.ic]), el("span", {}, [t.lbl]),
+        el("span", {}, [t.lbl]),
       ]));
     });
   }
@@ -99,7 +116,7 @@ window.App = (function () {
   let jogadoresCache = {};
   function mountDoses() {
     const root = $("#s-doses"); root.innerHTML = "";
-    const card = el("div", { class: "card" }, [el("h2", {}, ["🍺 Placar de doses"])]);
+    const card = el("div", { class: "card" }, [el("h2", {}, ["Placar de doses"])]);
     const lista = el("div", { class: "placar", id: "placar-lista" });
     card.appendChild(lista);
     if (me.papel === "moderador") card.appendChild(el("p", { class: "muted mt" }, ["Toque + / − pra ajustar. (Só você edita.)"]));
@@ -115,7 +132,7 @@ window.App = (function () {
     arr.forEach((j) => {
       const linha = el("div", { class: "linha" }, [
         el("span", { class: "conn-dot " + (j.conectado ? "on" : "") }),
-        el("span", { class: "nome" }, [j.nome || "?"]),
+        namebtn(j.nome || "?", String(j.doses || 0)),
       ]);
       if (me.papel === "moderador") {
         linha.appendChild(el("button", { class: "btn sm ghost", onclick: () => mudaDose(j.uid, -1) }, ["−"]));
@@ -153,11 +170,13 @@ window.App = (function () {
     document.body.dataset.role = me.papel;
     $("#tabbar").classList.remove("hidden");
     mountDoses();
-    Duelo.mount(me, { el, $, show, toast, money, jogadores: () => jogadoresCache });
-    Custos.mount(me, { el, $, toast, money });
-    Local.mount(me, { el, $ });
+    Duelo.mount(me, { el, $, show, toast, money, namebtn, mapbtn, jogadores: () => jogadoresCache });
+    Custos.mount(me, { el, $, toast, money, namebtn, mapbtn });
+    Local.mount(me, { el, $, namebtn, mapbtn });
     if (me.papel === "moderador") mountConfig();
-    show("s-duelo");
+    mountInicio();
+    mountJogosIntro();
+    show("s-inicio");
     // assina jogadores (placar + duelo + custos usam)
     Sala.on("jogadores", (v) => {
       jogadoresCache = v || {};
@@ -169,13 +188,42 @@ window.App = (function () {
     setInterval(() => { const s = $("#hdr-sub"); if (s) s.textContent = contagemTxt(); }, 60000);
   }
 
+  function mountInicio() {
+    const root = $("#s-inicio"); if (!root) return;
+    const ev = C().evento, L = C().local || {};
+    root.innerHTML = "";
+    const card = el("div", { class: "card inicio-card" }, []);
+    if (ev.fotoMatheus) card.appendChild(el("img", { class: "hero-foto", src: ev.fotoMatheus, alt: ev.noivo || "", onerror: function () { this.style.display = "none"; } }));
+    card.appendChild(el("h2", { class: "inicio-titulo" }, [ev.nome || "Despedida"]));
+    card.appendChild(el("p", { class: "quando" }, [dataEntrada(ev)]));
+    if (L.nomeLugar || L.endereco) card.appendChild(el("p", { class: "onde" }, [[L.nomeLugar, L.endereco].filter(Boolean).join(" · ")]));
+    const fotos = ev.fotos || [];
+    if (fotos.length) card.appendChild(el("div", { class: "galeria" }, fotos.map((s) => el("img", { src: s, alt: ev.noivo || "", loading: "lazy", onerror: function () { this.style.display = "none"; } }))));
+    card.appendChild(el("div", { class: "indices" }, [
+      el("button", { class: "indice", onclick: () => show("s-jogos") }, ["Jogos"]),
+      el("button", { class: "indice", onclick: () => show("s-custos") }, ["Custos"]),
+      el("button", { class: "indice", onclick: () => show("s-local") }, ["Local"]),
+    ]));
+    if (L.googleMapsUrl) card.appendChild(mapbtn("Como chegar", L.googleMapsUrl, "map-sm"));
+    root.appendChild(card);
+  }
+  function mountJogosIntro() {
+    const root = $("#jogos-intro"); if (!root) return;
+    root.innerHTML = "";
+    root.appendChild(el("div", { class: "card" }, [
+      el("h2", {}, ["Como funciona"]),
+      el("p", { class: "muted" }, ["O moderador sorteia uma dupla e uma pergunta. No “JÁ!”, os dois apertam o buzzer o mais rápido possível — quem reage mais rápido é quem responde."]),
+      el("p", { class: "muted" }, ["Acertou: o outro bebe. Errou: bebe quem respondeu. Apertar ANTES do “JÁ!” é queima de largada (bebe também)."]),
+      el("p", { class: "muted" }, ["O ranking de doses fica aqui embaixo e atualiza ao vivo."]),
+    ]));
+  }
   function mountConfig() {
     const root = $("#s-config"); root.innerHTML = "";
     root.appendChild(el("div", { class: "card" }, [
-      el("h2", {}, ["⚙️ Sessão"]),
+      el("h2", {}, ["Sessão"]),
       el("p", { class: "muted" }, ["Modo: " + (Sala.modo === "firebase" ? "Firebase (multi-celular)" : "Local (1 aparelho / abas)") + " · sala: " + Sala.codigo]),
-      el("button", { class: "btn danger mt", onclick: resetSala }, ["♻️ Resetar SALA (limpa duelo, doses, custos)"]),
-      el("button", { class: "btn ghost mt", onclick: resetLocal }, ["🧹 Resetar este aparelho (sair)"]),
+      el("button", { class: "btn danger mt", onclick: resetSala }, ["Resetar SALA (limpa duelo, doses, custos)"]),
+      el("button", { class: "btn ghost mt", onclick: resetLocal }, ["Resetar este aparelho (sair)"]),
     ]));
   }
   async function resetSala() {
@@ -187,11 +235,27 @@ window.App = (function () {
     localStorage.removeItem("modo"); localStorage.removeItem("meuNome");
     location.reload();
   }
+  // sair do papel atual e voltar pra tela inicial (mantém nome/uid/doses)
+  function trocarModo() {
+    if (!confirm("Trocar de modo? Você volta pra tela inicial (Moderador / Convidado). Seu nome e suas doses ficam salvos.")) return;
+    localStorage.removeItem("modo");
+    location.reload();
+  }
 
   // ---------- telas de entrada ----------
+  function dataEntrada(ev) {
+    if (!ev.data) return "";
+    const meses = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+    const dias = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
+    const p = ev.data.split("-"); if (p.length !== 3) return ev.data;
+    const dt = new Date(ev.data + "T" + (ev.horario || "10:00") + ":00");
+    const diaSem = isNaN(dt) ? "" : dias[dt.getDay()] + ", ";
+    const hora = ev.horario ? " · a partir das " + ev.horario.replace(":00", "h").replace(":", "h") : "";
+    return diaSem + parseInt(p[2], 10) + " de " + (meses[parseInt(p[1], 10) - 1] || "") + hora;
+  }
   function wireEntrada() {
     const ev = C().evento;
-    $("#entrada-titulo").innerHTML = (ev.nome || "Despedida").replace(/Matheus/i, "<em>Matheus</em>");
+    $("#entrada-titulo").innerHTML = (ev.nome || "Despedida").replace(/Dias/i, "<em>Dias</em>");
     $("#btn-moderador").addEventListener("click", () => show("s-pin"));
     $("#btn-convidado").addEventListener("click", () => {
       const ult = localStorage.getItem("meuNome"); if (ult) $("#in-nome").value = ult;

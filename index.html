@@ -4,11 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
   <meta name="theme-color" content="#F3EFE6" />
-  <title>Despedida do Matheus</title>
+  <title>Despedida do Dias</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Bebas+Neue&family=Inter:wght@400;600;800&family=Manrope:wght@500;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
@@ -20,16 +20,14 @@
     <!-- ENTRADA -->
     <section id="s-entrada" class="screen active">
       <div class="entrada">
-        <h1 class="hero" id="entrada-titulo">Despedida do <em>Matheus</em></h1>
+        <h1 class="hero" id="entrada-titulo">Despedida do <em>Dias</em></h1>
         <p class="sub">Quem é você nessa noite?</p>
         <div class="papeis">
           <div class="papel-card mod" id="btn-moderador">
-            <div class="ic">🎛️</div>
             <h3>Sou Moderador</h3>
             <p class="muted">Controla o jogo (tablet). Pede PIN.</p>
           </div>
           <div class="papel-card guest" id="btn-convidado">
-            <div class="ic">🍻</div>
             <h3>Sou Convidado</h3>
             <p class="muted">Entra na sala e pega o buzzer.</p>
           </div>
@@ -61,8 +59,12 @@
     </section>
 
     <!-- TELAS DOS MÓDULOS (preenchidas via JS) -->
-    <section id="s-duelo" class="screen"></section>
-    <section id="s-doses" class="screen"></section>
+    <section id="s-inicio" class="screen"></section>
+    <section id="s-jogos" class="screen">
+      <div id="jogos-intro"></div>
+      <div id="s-duelo"></div>
+      <div id="s-doses"></div>
+    </section>
     <section id="s-custos" class="screen"></section>
     <section id="s-local" class="screen"></section>
     <section id="s-config" class="screen"></section>

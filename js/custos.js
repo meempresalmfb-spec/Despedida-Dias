@@ -1,49 +1,66 @@
 // ============================================================
-//  CUSTOS & PAGAMENTOS — lista aberta (Firebase), sem login.
-//  Todos veem; só o moderador edita despesas e marca pago (nome fica verde).
-//  Comprovante de PIX → IndexedDB (local do aparelho do moderador).
+//  CUSTOS & PAGAMENTOS — rateio pela LISTA DE CONFIRMADOS.
+//  Miguel adiantou tudo (despesasFixas); os outros reembolsam via PIX.
+//  Só o moderador marca pago (nome fica verde). Comprovante fica na despesa.
 // ============================================================
 window.Custos = (function () {
   let me, H;
-  let despesas = {};   // custos/despesas/{id}
-  let status = {};     // custos/status/{uid}
+  let despesas = {};     // custos/despesas/{id}  (despesas dinâmicas)
+  let statusNome = {};   // custos/statusNome/{slug} = { pago }
   let jogadores = {};
 
   const cfgC = () => window.CONFIG.custos || {};
-  const ev = () => window.CONFIG.evento || {};
 
-  // pessoas que entram no rateio
-  function pessoasRateio() {
-    const noivo = (ev().noivo || "").toLowerCase();
-    return Object.keys(jogadores)
-      .filter((k) => jogadores[k] && jogadores[k].papel === "convidado")
-      .map((k) => ({ uid: k, nome: jogadores[k].nome || "?" }))
-      .filter((p) => cfgC().matheusNoRateio || !(noivo && p.nome.toLowerCase().includes(noivo.split(" ")[0])));
+  function slug(s) {
+    return (s || "").toString().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   }
-  const nomeDe = (u) => (jogadores[u] && jogadores[u].nome) || "?";
+  const recebId = () => slug(cfgC().nomeRecebedor || "");
+  const ehReceb = (id) => !!recebId() && id === recebId();
 
+  // quem rateia = lista de confirmados, menos quem não paga (noivo)
+  function pessoasRateio() {
+    const fora = new Set((cfgC().naoPaga || []).map(slug));
+    return (window.CONFIG.participantes || [])
+      .map((nome) => ({ nome, id: slug(nome) }))
+      .filter((p) => p.id && !fora.has(p.id));
+  }
+  const nomeDe = (id) => { const p = pessoasRateio().find((x) => x.id === id); return p ? p.nome : id; };
+
+  // despesas fixas (config, já pagas pelo Miguel) + dinâmicas (sala)
+  function fixas() {
+    return (cfgC().despesasFixas || []).map((d, i) => ({
+      id: "fix" + i, desc: d.desc, valor: d.valor, participantes: "todos",
+      comprovante: d.comprovante, pagoPor: d.pagoPor, fixa: true,
+    }));
+  }
+  function todas() {
+    return fixas().concat(Object.keys(despesas).map((id) => ({ id, ...despesas[id] })));
+  }
   function partsDe(d) {
     if (!d) return [];
-    if (d.participantes === "todos" || !Array.isArray(d.participantes)) return pessoasRateio().map((p) => p.uid);
+    if (d.participantes === "todos" || !Array.isArray(d.participantes)) return pessoasRateio().map((p) => p.id);
     return d.participantes;
   }
-  function deve(uid) {
+  function deve(id) {
     let total = 0;
-    Object.values(despesas).forEach((d) => {
+    todas().forEach((d) => {
       const parts = partsDe(d);
-      if (parts.includes(uid) && parts.length) total += (Number(d.valor) || 0) / parts.length;
+      if (parts.includes(id) && parts.length) total += (Number(d.valor) || 0) / parts.length;
     });
     return total;
   }
-  const totalFesta = () => Object.values(despesas).reduce((s, d) => s + (Number(d.valor) || 0), 0);
-  function arrecadado() {
-    return pessoasRateio().reduce((s, p) => s + ((status[p.uid] && status[p.uid].pago) ? deve(p.uid) : 0), 0);
-  }
+  const totalFesta = () => todas().reduce((s, d) => s + (Number(d.valor) || 0), 0);
+  function perHead() { const n = pessoasRateio().length; return n ? totalFesta() / n : 0; }
+  const pago = (id) => ehReceb(id) || !!(statusNome[id] && statusNome[id].pago);
+  // total que os outros devem ao recebedor, e quanto já voltou
+  const aReceber = () => pessoasRateio().filter((p) => !ehReceb(p.id)).reduce((s, p) => s + deve(p.id), 0);
+  const arrecadado = () => pessoasRateio().filter((p) => !ehReceb(p.id) && pago(p.id)).reduce((s, p) => s + deve(p.id), 0);
 
   function mount(_me, _H) {
     me = _me; H = _H;
     Sala.on("custos/despesas", (v) => { despesas = v || {}; render(); });
-    Sala.on("custos/status", (v) => { status = v || {}; render(); });
+    Sala.on("custos/statusNome", (v) => { statusNome = v || {}; render(); });
   }
   function onJogadores(cache) { jogadores = cache || {}; render(); }
 
@@ -63,27 +80,16 @@ window.Custos = (function () {
     H.toast("Despesa adicionada.");
   }
   function rmDespesa(id) { if (confirm("Remover despesa?")) Sala.remove("custos/despesas/" + id); }
-  function togglePago(uid) {
-    const novo = !(status[uid] && status[uid].pago);
-    Sala.update("custos/status/" + uid, { pago: novo });
-    H.toast(nomeDe(uid) + (novo ? " marcado PAGO ✓" : " desmarcado"));
+  function togglePago(id) {
+    const novo = !(statusNome[id] && statusNome[id].pago);
+    Sala.update("custos/statusNome/" + id, { pago: novo });
+    H.toast(nomeDe(id) + (novo ? " marcado PAGO" : " desmarcado"));
   }
   function copiarPix() {
     const chave = cfgC().chavePix || "";
     if (!chave) { H.toast("Sem chave PIX no config."); return; }
     (navigator.clipboard ? navigator.clipboard.writeText(chave) : Promise.reject()).then(
       () => H.toast("PIX copiado!"), () => H.toast("Copie manualmente: " + chave));
-  }
-  // comprovante → IndexedDB
-  function anexarComprovante(uid, file) {
-    if (!file) return;
-    idbPut(uid, file).then(() => { Sala.update("custos/status/" + uid, { comprovanteRef: uid }); H.toast("Comprovante salvo (neste aparelho)."); });
-  }
-  function verComprovante(uid) {
-    idbGet(uid).then((blob) => {
-      if (!blob) { H.toast("Comprovante não está neste aparelho."); return; }
-      const url = URL.createObjectURL(blob); window.open(url, "_blank");
-    });
   }
 
   // ---------- render ----------
@@ -92,17 +98,19 @@ window.Custos = (function () {
     const ehMod = me.papel === "moderador";
     root.innerHTML = "";
 
-    // resumo
-    const total = totalFesta(), arr = arrecadado(), falta = Math.max(0, total - arr);
-    const pct = total ? Math.min(100, (arr / total) * 100) : 0;
-    const resumo = H.el("div", { class: "card" }, [
-      H.el("h2", {}, ["💸 Custos da festa"]),
+    // resumo (progresso = reembolso ao recebedor)
+    const total = totalFesta(), receber = aReceber(), arr = arrecadado(), falta = Math.max(0, receber - arr);
+    const pct = receber ? Math.min(100, (arr / receber) * 100) : 0;
+    root.appendChild(H.el("div", { class: "card" }, [
+      H.el("h2", {}, ["Custos da festa"]),
       H.el("div", { class: "resumo-custos" }, [
-        box("total", "Total", total), box("arrec", "Arrecadado", arr), box("falta", "Falta", falta),
+        box("total", "Total", total), box("arrec", "Reembolsado", arr), box("falta", "Falta", falta),
       ]),
       barra(pct),
-    ]);
-    root.appendChild(resumo);
+      cfgC().nomeRecebedor
+        ? H.el("p", { class: "muted mt" }, [cfgC().nomeRecebedor + " adiantou tudo e recebe dos outros · cada um deve " + H.money(perHead())])
+        : H.el("span"),
+    ]));
 
     // PIX
     const chave = cfgC().chavePix;
@@ -117,56 +125,54 @@ window.Custos = (function () {
       ]));
     }
 
-    // lista de pessoas
+    // quem deve quanto
     const cardP = H.el("div", { class: "card" }, [H.el("h2", {}, ["Quem deve quanto"])]);
     const lista = H.el("div", { class: "lista-pessoas" });
-    const pessoas = pessoasRateio().sort((a, b) => a.nome.localeCompare(b.nome));
-    if (!pessoas.length) lista.appendChild(H.el("p", { class: "muted" }, ["Ninguém na sala ainda."]));
+    const pessoas = pessoasRateio().slice().sort((a, b) => (ehReceb(b.id) - ehReceb(a.id)) || a.nome.localeCompare(b.nome));
+    if (!pessoas.length) lista.appendChild(H.el("p", { class: "muted" }, ["Sem lista de confirmados no config."]));
     pessoas.forEach((p) => {
-      const pago = status[p.uid] && status[p.uid].pago;
-      const temComp = status[p.uid] && status[p.uid].comprovanteRef;
-      const euMesmo = p.uid === me.uid;
-      const linha = H.el("div", { class: "pessoa" + (pago ? " pago" : "") }, [
-        H.el("span", { class: "check" }, [pago ? "✅" : "•"]),
-        H.el("span", { class: "nome" }, [p.nome + (euMesmo ? " (você)" : "")]),
-        H.el("span", { class: "deve" }, [H.money(deve(p.uid))]),
+      const isReceb = ehReceb(p.id);
+      const pg = !isReceb && !!(statusNome[p.id] && statusNome[p.id].pago);
+      const linha = H.el("div", { class: "pessoa" + (pg ? " pago" : "") }, [
+        H.namebtn(p.nome + (isReceb ? " (recebe)" : ""), isReceb ? "recebe" : (pg ? "pago" : "deve"), pg),
+        H.el("span", { class: "deve" }, [isReceb ? "adiantou" : H.money(deve(p.id))]),
       ]);
-      if (ehMod) {
+      if (ehMod && !isReceb) {
         linha.style.cursor = "pointer";
-        linha.addEventListener("click", (e) => { if (e.target.tagName !== "BUTTON" && e.target.tagName !== "INPUT") togglePago(p.uid); });
-        const fileId = "comp-" + p.uid;
-        const file = H.el("input", { type: "file", accept: "image/*", id: fileId, class: "hidden", onchange: (e) => anexarComprovante(p.uid, e.target.files[0]) });
-        linha.appendChild(H.el("button", { class: "btn sm ghost", title: "anexar comprovante", onclick: () => document.getElementById(fileId).click() }, ["📎"]));
-        linha.appendChild(file);
-        if (temComp) linha.appendChild(H.el("button", { class: "btn sm ghost", onclick: () => verComprovante(p.uid) }, ["👁"]));
+        linha.addEventListener("click", () => togglePago(p.id));
       }
       lista.appendChild(linha);
     });
     cardP.appendChild(lista);
-    if (ehMod) cardP.appendChild(H.el("p", { class: "muted mt" }, ["Toque no nome pra marcar/desmarcar PAGO."]));
+    cardP.appendChild(H.el("p", { class: "muted mt" }, [
+      ehMod ? "Toque no nome pra marcar/desmarcar PAGO." : "Verde = já acertou com o " + (cfgC().nomeRecebedor || "organizador") + ".",
+    ]));
     root.appendChild(cardP);
 
     // despesas
     const cardD = H.el("div", { class: "card" }, [H.el("h2", {}, ["Despesas"])]);
-    const dids = Object.keys(despesas);
-    if (!dids.length) cardD.appendChild(H.el("p", { class: "muted" }, ["Nenhuma despesa ainda."]));
-    dids.forEach((id) => {
-      const d = despesas[id];
+    const lds = todas();
+    if (!lds.length) cardD.appendChild(H.el("p", { class: "muted" }, ["Nenhuma despesa ainda."]));
+    lds.forEach((d) => {
       const parts = partsDe(d);
+      const meta = (d.participantes === "todos" ? "rateio entre todos" : parts.length + " pessoa(s)") + " · "
+        + H.money((Number(d.valor) || 0) / (parts.length || 1)) + "/cabeça"
+        + (d.pagoPor ? " · pago por " + d.pagoPor : "");
       const linha = H.el("div", { class: "despesa" }, [
         H.el("div", { class: "d" }, [
           H.el("div", { class: "nm" }, [d.desc]),
-          H.el("div", { class: "meta" }, [(d.participantes === "todos" ? "todos" : parts.length + " pessoa(s)") + " · " + H.money((Number(d.valor) || 0) / (parts.length || 1)) + "/cabeça"]),
+          H.el("div", { class: "meta" }, [meta]),
         ]),
         H.el("div", { class: "vl" }, [H.money(d.valor)]),
       ]);
-      if (ehMod) linha.appendChild(H.el("button", { class: "btn sm ghost", onclick: () => rmDespesa(id) }, ["🗑"]));
+      if (d.comprovante) linha.appendChild(H.el("button", { class: "btn sm ghost", title: "ver comprovante", onclick: () => window.open(d.comprovante, "_blank") }, ["comprovante"]));
+      if (ehMod && !d.fixa) linha.appendChild(H.el("button", { class: "btn sm ghost", onclick: () => rmDespesa(d.id) }, ["remover"]));
       cardD.appendChild(linha);
     });
 
     if (ehMod) {
       const form = H.el("div", { class: "mt" }, [
-        H.el("label", { class: "field" }, [H.el("span", {}, ["Descrição"]), H.el("input", { id: "cst-desc", placeholder: "Ex: balde de cerveja" })]),
+        H.el("label", { class: "field" }, [H.el("span", {}, ["Descrição"]), H.el("input", { id: "cst-desc", placeholder: "Ex: gelo, carvão..." })]),
         H.el("label", { class: "field" }, [H.el("span", {}, ["Valor (R$)"]), H.el("input", { id: "cst-valor", inputmode: "decimal", placeholder: "120,00" })]),
         H.el("label", { class: "row", style: "gap:10px;margin:8px 0" }, [
           H.el("input", { type: "checkbox", id: "cst-todos", checked: "", style: "width:24px;height:24px;min-height:0", onchange: toggleTodos }),
@@ -191,7 +197,7 @@ window.Custos = (function () {
     wrap.innerHTML = "";
     pessoasRateio().forEach((p) => {
       const lbl = H.el("label", { class: "chip" }, [
-        H.el("input", { type: "checkbox", class: "cst-part", value: p.uid, style: "width:auto;min-height:0;height:auto;margin-right:6px" }),
+        H.el("input", { type: "checkbox", class: "cst-part", value: p.id, style: "width:auto;min-height:0;height:auto;margin-right:6px" }),
         document.createTextNode(p.nome),
       ]);
       wrap.appendChild(lbl);
@@ -203,32 +209,7 @@ window.Custos = (function () {
     return H.el("div", { class: "box " + cls }, [H.el("div", { class: "v" }, [H.money(val)]), H.el("div", { class: "l" }, [label])]);
   }
   function barra(pct) {
-    const b = H.el("div", { class: "barra" }, [H.el("i", { style: "width:" + pct + "%" })]);
-    return b;
-  }
-
-  // ---------- IndexedDB (comprovantes) ----------
-  let _db = null;
-  function idb() {
-    if (_db) return Promise.resolve(_db);
-    return new Promise((res, rej) => {
-      const r = indexedDB.open("despedida-comprovantes", 1);
-      r.onupgradeneeded = () => r.result.createObjectStore("comp");
-      r.onsuccess = () => { _db = r.result; res(_db); };
-      r.onerror = () => rej(r.error);
-    });
-  }
-  function idbPut(key, blob) {
-    return idb().then((db) => new Promise((res, rej) => {
-      const tx = db.transaction("comp", "readwrite"); tx.objectStore("comp").put(blob, key);
-      tx.oncomplete = res; tx.onerror = () => rej(tx.error);
-    }));
-  }
-  function idbGet(key) {
-    return idb().then((db) => new Promise((res, rej) => {
-      const tx = db.transaction("comp", "readonly"); const rq = tx.objectStore("comp").get(key);
-      rq.onsuccess = () => res(rq.result); rq.onerror = () => rej(rq.error);
-    }));
+    return H.el("div", { class: "barra" }, [H.el("i", { style: "width:" + pct + "%" })]);
   }
 
   return { mount, onJogadores };

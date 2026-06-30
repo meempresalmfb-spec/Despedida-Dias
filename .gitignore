@@ -1,3 +1,9 @@
 ﻿.DS_Store
 Thumbs.db
 node_modules/
+
+# pasta gerada pra drag-drop (não precisa no repo)
+SITE-NETLIFY/
+# originais pesados não usados pelo site (as cópias usadas estão em assets/)
+IMG_*.jpeg
+Captura de tela*.png

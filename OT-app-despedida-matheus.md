@@ -50,10 +50,10 @@ Hospedável no GitHub Pages. Os aparelhos se conectam numa **sala** via Firebase
 
 ## 3. Design System
 
-Vibe: **noite, bar premium, masculino, whisky.** Escuro com destaque âmbar/dourado.
+Vibe: **bar premium, masculino, churrasco/boteco.** **Tema claro quente (creme)** com destaque âmbar/dourado.
 
-- **Paleta:** fundo `#0E0E10` / cards `#1A1A1E` / texto `#F2EFE6` / destaque âmbar `#D4A017` / punição `#D43A2F` / pago `#3FA34D`.
-- **Tipografia:** títulos display pesados (**Anton** / **Bebas Neue** / **Archivo Black**); corpo **Inter** / **Manrope**.
+- **Paleta:** fundo `#F3EFE6` / cards `#FFFFFF` / texto `#1C1A16` / destaque âmbar `#C2870F` (texto âmbar `#A66F08`) / punição `#C7382D` / pago `#2E8B4A`.
+- **Tipografia:** **Bebas Neue** (títulos, números grandes — timer/doses, nomes dos duelistas, botões de destaque) + **Manrope** (corpo, listas, valores de custos). Tokens CSS `--font-titulo` / `--font-corpo`. Bebas é caixa-alta condensada — usar **só** em destaques; **não** forçar `text-transform` na Manrope.
 - **Componentes:** cards arredondados, microanimações, transições de aba, botões gigantes.
 - **Header:** nome do evento + avatar do Matheus + contador regressivo (opcional).
 - O **modo Convidado** e o **modo Moderador** têm cores de borda/acento distintas pra não confundir quem tá com o quê.

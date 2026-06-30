@@ -9,7 +9,8 @@ window.Duelo = (function () {
   let me, H;
   let atual = null;       // duelo/atual
   let tempos = {};        // duelo/tempos
-  let jogados = {};       // duelo/jogados (semRepetir)
+  let jogados = {};       // duelo/jogados (semRepetir de duplas)
+  let perguntasUsadas = {}; // duelo/perguntasUsadas (semRepetir de perguntas)
   let jogadores = {};     // cache de jogadores conectados
 
   // estado local do convidado (lisura)
@@ -28,6 +29,7 @@ window.Duelo = (function () {
     Sala.on("duelo/atual", (v) => { atual = v; render(); });
     Sala.on("duelo/tempos", (v) => { tempos = v || {}; render(); });
     Sala.on("duelo/jogados", (v) => { jogados = v || {}; });
+    Sala.on("duelo/perguntasUsadas", (v) => { perguntasUsadas = v || {}; });
   }
   function onJogadores(cache) { jogadores = cache || {}; render(); }
 
@@ -49,11 +51,26 @@ window.Duelo = (function () {
   function sortearPergunta() {
     const banco = window.PERGUNTAS || [];
     if (!banco.length) { H.toast("Sem perguntas no banco (js/data/perguntas.js)."); return; }
-    let i = Math.floor(Math.random() * banco.length);
-    if (banco.length > 1 && atual && i === atual.perguntaId) i = (i + 1) % banco.length;
+    let livres = banco.map((_, i) => i);
+    if (cfg().semRepetir) {
+      livres = livres.filter((i) => !perguntasUsadas[i]);
+      if (!livres.length) {                       // todas já saíram → reembaralha
+        Sala.remove("duelo/perguntasUsadas"); perguntasUsadas = {};
+        livres = banco.map((_, i) => i);
+        H.toast("Todas as perguntas já saíram — reembaralhando.");
+      }
+    }
+    // re-roll ("Outra pergunta") não repete a que está na tela, se houver outra
+    if (livres.length > 1 && atual && atual.perguntaId != null) {
+      const semAtual = livres.filter((i) => i !== atual.perguntaId);
+      if (semAtual.length) livres = semAtual;
+    }
+    const i = livres[Math.floor(Math.random() * livres.length)];
     Sala.update("duelo/atual", { perguntaId: i });
   }
   function prepararJa() {
+    // a pergunta "saiu" (foi lida, vai ao ar) → não roda mais até reembaralhar
+    if (cfg().semRepetir && atual && atual.perguntaId != null) Sala.update("duelo/perguntasUsadas", { [atual.perguntaId]: true });
     Sala.update("duelo/atual", { estado: "preparando" });
     const min = cfg().atrasoMinMs || 1500, max = cfg().atrasoMaxMs || 4000;
     const atraso = min + Math.random() * (max - min);
@@ -72,8 +89,8 @@ window.Duelo = (function () {
     const resp = responder();
     if (!resp) { H.toast("Ninguém respondeu válido."); return; }
     const outro = resp === atual.aId ? atual.bId : atual.aId;
-    if (acertou) { darDose(outro, +1); H.toast(nomeDe(resp) + " acertou! " + nomeDe(outro) + " bebe 🥃"); }
-    else { darDose(resp, +1); H.toast(nomeDe(resp) + " errou — bebe 🥃"); }
+    if (acertou) { darDose(outro, +1); H.toast(nomeDe(resp) + " acertou! " + nomeDe(outro) + " bebe"); }
+    else { darDose(resp, +1); H.toast(nomeDe(resp) + " errou — bebe"); }
     encerrar();
   }
   function encerrar() {
@@ -100,7 +117,7 @@ window.Duelo = (function () {
     if (atual.estado === "preparando") {              // queimou a largada
       jaMarquei = true;
       Sala.set("duelo/tempos/" + me.uid, { queima: true, ts: Date.now() });
-      H.toast("Queimou a largada! 🔥");
+      H.toast("Queimou a largada!");
     } else if (atual.estado === "liberado" && t0) {   // reação válida
       const reacao = (performance.now() - t0) / 1000;
       jaMarquei = true;
@@ -157,7 +174,7 @@ window.Duelo = (function () {
   }
 
   function renderModerador(root) {
-    const card = H.el("div", { class: "card" }, [H.el("h2", {}, ["🎯 Duelo"])]);
+    const card = H.el("div", { class: "card" }, [H.el("h2", {}, ["Duelo"])]);
     const conn = conectados();
     card.appendChild(H.el("p", { class: "muted" }, [conn.length + " convidado(s) conectado(s)."]));
 
@@ -166,7 +183,7 @@ window.Duelo = (function () {
     if (!atual || estado === "fim") {
       if (estado === "fim") { card.appendChild(vsPanel()); card.appendChild(gabaritoCard()); }
       card.appendChild(H.el("button", { class: "btn primary mt", disabled: conn.length < 2 ? "" : null, onclick: sortearDuelo },
-        [estado === "fim" ? "🎲 Próximo duelo" : "🎲 Sortear duelo"]));
+        [estado === "fim" ? "Próximo duelo" : "Sortear duelo"]));
       if (conn.length < 2) card.appendChild(H.el("p", { class: "muted mt" }, ["Aguardando convidados entrarem na sala…"]));
       root.appendChild(card); return;
     }
@@ -174,13 +191,17 @@ window.Duelo = (function () {
     card.appendChild(vsPanel());
 
     if (estado === "aberto" && atual.perguntaId == null) {
-      card.appendChild(H.el("button", { class: "btn primary", onclick: sortearPergunta }, ["❓ Sortear pergunta"]));
-      card.appendChild(H.el("button", { class: "btn ghost mt", onclick: sortearDuelo }, ["🎲 Re-sortear dupla"]));
+      card.appendChild(H.el("button", { class: "btn primary", onclick: sortearPergunta }, ["Sortear pergunta"]));
+      if (cfg().semRepetir) {
+        const total = (window.PERGUNTAS || []).length, usadas = Object.keys(perguntasUsadas).length;
+        card.appendChild(H.el("p", { class: "muted center mt" }, [Math.max(0, total - usadas) + " de " + total + " perguntas ainda não saíram"]));
+      }
+      card.appendChild(H.el("button", { class: "btn ghost mt", onclick: sortearDuelo }, ["Re-sortear dupla"]));
     } else if (estado === "aberto" && atual.perguntaId != null) {
       card.appendChild(gabaritoCard());
       card.appendChild(H.el("p", { class: "muted" }, ["Leia a pergunta em voz alta. Quando estiverem prontos:"]));
-      card.appendChild(H.el("button", { class: "btn primary", onclick: prepararJa }, ["🔫 Preparar (dispara o JÁ!)"]));
-      card.appendChild(H.el("button", { class: "btn ghost mt", onclick: sortearPergunta }, ["🔁 Outra pergunta"]));
+      card.appendChild(H.el("button", { class: "btn primary", onclick: prepararJa }, ["Preparar (dispara o JÁ!)"]));
+      card.appendChild(H.el("button", { class: "btn ghost mt", onclick: sortearPergunta }, ["Outra pergunta"]));
     } else if (estado === "preparando") {
       card.appendChild(H.el("p", { class: "center" }, [H.el("span", { class: "estado-pill" }, ["preparando… aguarde o JÁ!"])]));
     } else if (estado === "liberado") {
@@ -188,7 +209,7 @@ window.Duelo = (function () {
       if (!revelar) {
         card.appendChild(H.el("p", { class: "center" }, [H.el("span", { class: "estado-pill live" }, ["JÁ! — buzzers liberados"])]));
         card.appendChild(H.el("p", { class: "muted center" }, ["Esperando os dois apertarem…"]));
-        card.appendChild(H.el("button", { class: "btn ghost mt", onclick: () => { forceReveal = true; render(); } }, ["⏭️ Encerrar buzzer agora"]));
+        card.appendChild(H.el("button", { class: "btn ghost mt", onclick: () => { forceReveal = true; render(); } }, ["Encerrar buzzer agora"]));
       } else {
         card.appendChild(gabaritoCard());
         const resp = responder();
@@ -196,7 +217,7 @@ window.Duelo = (function () {
         [atual.aId, atual.bId].forEach((u) => {
           if (tempos[u] && tempos[u].queima) {
             card.appendChild(H.el("div", { class: "row mt" }, [
-              H.el("span", { class: "spacer" }, [nomeDe(u) + " queimou a largada 🔥"]),
+              H.el("span", { class: "spacer" }, [nomeDe(u) + " queimou a largada"]),
               H.el("button", { class: "btn sm danger", onclick: () => darDose(u, +1) }, ["+1 dose"]),
             ]));
           }
@@ -204,11 +225,11 @@ window.Duelo = (function () {
         if (resp) {
           card.appendChild(H.el("p", { class: "center mt" }, ["Respondeu primeiro: ", H.el("b", {}, [nomeDe(resp)])]));
           card.appendChild(H.el("div", { class: "btn-row mt" }, [
-            H.el("button", { class: "btn ok", onclick: () => arbitrar(true) }, ["✅ Acertou"]),
-            H.el("button", { class: "btn danger", onclick: () => arbitrar(false) }, ["❌ Errou"]),
+            H.el("button", { class: "btn ok", onclick: () => arbitrar(true) }, ["Acertou"]),
+            H.el("button", { class: "btn danger", onclick: () => arbitrar(false) }, ["Errou"]),
           ]));
         } else {
-          card.appendChild(H.el("p", { class: "muted center mt" }, ["Ninguém válido (queima/sem resposta). Ajuste as doses na aba 🍺 se precisar."]));
+          card.appendChild(H.el("p", { class: "muted center mt" }, ["Ninguém válido (queima/sem resposta). Ajuste as doses no placar se precisar."]));
         }
         card.appendChild(H.el("button", { class: "btn ghost mt", onclick: encerrar }, ["Encerrar duelo"]));
       }
@@ -218,7 +239,7 @@ window.Duelo = (function () {
 
   function renderConvidado(root) {
     const souDuelista = atual && (me.uid === atual.aId || me.uid === atual.bId);
-    const card = H.el("div", { class: "card" }, [H.el("h2", {}, ["🎯 Duelo"])]);
+    const card = H.el("div", { class: "card" }, [H.el("h2", {}, ["Duelo"])]);
 
     if (!atual || atual.estado === "fim") {
       card.appendChild(H.el("p", { class: "center" }, [!atual ? "Aguarde o moderador sortear um duelo." : "Duelo encerrado."]));
@@ -240,7 +261,7 @@ window.Duelo = (function () {
     let cls = "buzzer aguarde", txt = "AGUARDE", dis = true;
     if (jaMarquei) {
       const t = tempos[me.uid];
-      if (t && t.queima) { cls = "buzzer queima"; txt = "QUEIMOU 🔥"; }
+      if (t && t.queima) { cls = "buzzer queima"; txt = "QUEIMOU"; }
       else { cls = "buzzer travado"; txt = t ? t.reacao.toFixed(3).replace(".", ",") + "s" : "..."; }
     } else if (atual.estado === "aberto") {
       txt = "PREPARE-SE"; dis = true;
