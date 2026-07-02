@@ -36,7 +36,8 @@ window.CONFIG = {
     naoPaga: ["Dias"],             // noivo não paga (nome como aparece na lista de presença)
     // Despesas já pagas pelo Miguel — entram no rateio; comprovante = foto em assets/
     despesasFixas: [
-      { desc: "Chopp (Brahma Express)", valor: 2580.49, pagoPor: "Miguel", comprovante: "assets/comprovante-chopp.jpeg" },
+      // Igor G. e Claudim não bebem chopp → ficam de fora do rateio DESTE item (o valor se redistribui entre os outros).
+      { desc: "Chopp (Brahma Express)", valor: 2580.49, pagoPor: "Miguel", comprovante: "assets/comprovante-chopp.jpeg", exclui: ["Igor G.", "Claudim"] },
       { desc: "Churrasqueiro (Wanderson)", valor: 400.00, pagoPor: "Miguel", comprovante: "assets/comprovante-churrasco.jpeg" },
       { desc: "Diarista", valor: 500.00, pagoPor: "Miguel" },
       { desc: "Manutenção da chácara", valor: 500.00, pagoPor: "Miguel" },

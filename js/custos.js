@@ -31,7 +31,7 @@ window.Custos = (function () {
   function fixas() {
     return (cfgC().despesasFixas || []).map((d, i) => ({
       id: "fix" + i, desc: d.desc, valor: d.valor, participantes: "todos",
-      comprovante: d.comprovante, pagoPor: d.pagoPor, fixa: true,
+      exclui: d.exclui, comprovante: d.comprovante, pagoPor: d.pagoPor, fixa: true,
     }));
   }
   function todas() {
@@ -39,8 +39,10 @@ window.Custos = (function () {
   }
   function partsDe(d) {
     if (!d) return [];
-    if (d.participantes === "todos" || !Array.isArray(d.participantes)) return pessoasRateio().map((p) => p.id);
-    return d.participantes;
+    const base = (d.participantes === "todos" || !Array.isArray(d.participantes))
+      ? pessoasRateio().map((p) => p.id) : d.participantes;
+    const fora = new Set((Array.isArray(d.exclui) ? d.exclui : []).map(slug));
+    return fora.size ? base.filter((id) => !fora.has(id)) : base;
   }
   function deve(id) {
     let total = 0;
@@ -108,7 +110,7 @@ window.Custos = (function () {
       ]),
       barra(pct),
       cfgC().nomeRecebedor
-        ? H.el("p", { class: "muted mt" }, [cfgC().nomeRecebedor + " adiantou tudo e recebe dos outros · cada um deve " + H.money(perHead())])
+        ? H.el("p", { class: "muted mt" }, [cfgC().nomeRecebedor + " adiantou tudo e recebe dos outros · em média " + H.money(perHead()) + "/pessoa (veja quem deve quanto)"])
         : H.el("span"),
     ]));
 
@@ -155,8 +157,10 @@ window.Custos = (function () {
     if (!lds.length) cardD.appendChild(H.el("p", { class: "muted" }, ["Nenhuma despesa ainda."]));
     lds.forEach((d) => {
       const parts = partsDe(d);
-      const meta = (d.participantes === "todos" ? "rateio entre todos" : parts.length + " pessoa(s)") + " · "
+      const temExclui = Array.isArray(d.exclui) && d.exclui.length;
+      const meta = (d.participantes === "todos" && !temExclui ? "rateio entre todos" : parts.length + " pessoa(s)") + " · "
         + H.money((Number(d.valor) || 0) / (parts.length || 1)) + "/cabeça"
+        + (temExclui ? " · sem " + d.exclui.join(", ") : "")
         + (d.pagoPor ? " · pago por " + d.pagoPor : "");
       const linha = H.el("div", { class: "despesa" }, [
         H.el("div", { class: "d" }, [
