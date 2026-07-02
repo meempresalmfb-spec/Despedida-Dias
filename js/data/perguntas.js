@@ -20,6 +20,8 @@ window.PERGUNTAS = [
   { cat: "Conhece o Matheus?", q: "Qual a música favorita do Matheus?", r: "Na Hora de Amar (Gusttavo Lima)" },
   { cat: "Conhece o Matheus?", q: "Qual o gênero de filme favorito do Matheus?", r: "Terror" },
   { cat: "Conhece o Matheus?", q: "Qual o escritor favorito do Matheus?", r: "Shakespeare" },
+  { cat: "Conhece o Matheus?", q: "Qual matéria da escola o Dias reprovou?", r: "Matemática" },
+  { cat: "Conhece o Matheus?", q: "Qual amigo do Dias é conhecido por gostar de rapazes mais novos?", r: "Dirtgo" },
 
   // ---- Corinthians ----
   { cat: "Corinthians", q: "Em que ano o Corinthians foi fundado?", r: "1910" },

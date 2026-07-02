@@ -228,7 +228,8 @@ window.App = (function () {
       // ANTES de começar: só a explicação (+ botão pro moderador)
       const card = el("div", { class: "card" }, [
         el("h2", {}, ["Os jogos"]),
-        el("p", { class: "muted" }, ["Duelo de perguntas: o moderador sorteia uma dupla e uma pergunta e lê em voz alta. Quem errar (ou não souber) bebe uma dose."]),
+        el("p", { class: "muted" }, ["As perguntas são sobre os gostos, o trabalho e a história do Dias (com umas zoeiras no meio 😏)."]),
+        el("p", { class: "muted" }, ["O moderador sorteia uma dupla e uma pergunta e lê em voz alta. Quem errar (ou não souber) bebe uma dose."]),
         el("p", { class: "muted" }, ["O moderador marca quem bebeu e o ranking de doses sobe ao vivo pra todo mundo. 🍺"]),
       ]);
       if (me.papel === "moderador") {
