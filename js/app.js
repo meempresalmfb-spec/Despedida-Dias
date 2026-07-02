@@ -191,6 +191,31 @@ window.App = (function () {
     setInterval(() => { const s = $("#hdr-sub"); if (s) s.textContent = contagemTxt(); }, 60000);
   }
 
+  // ---------- compartilhar convite (poster + frase + link) ----------
+  async function compartilharConvite() {
+    const url = "https://despedidadias.netlify.app/";
+    const texto = "🍺 Despedida do Dias — 04/07!\nAcessa o site especial da festa (jogos, placar de doses, custos e local):\n" + url;
+    let file = null;
+    try {
+      const resp = await fetch("assets/poster.jpg");
+      const blob = await resp.blob();
+      file = new File([blob], "despedida-do-dias.jpg", { type: blob.type || "image/jpeg" });
+    } catch (e) { /* segue sem imagem */ }
+    // 1) compartilhamento nativo COM o poster (melhor no celular → WhatsApp, etc.)
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], text: texto }); return; }
+      catch (e) { if (e && e.name === "AbortError") return; }
+    }
+    // 2) compartilhamento nativo só com texto + link
+    if (navigator.share) {
+      try { await navigator.share({ text: texto, url: url }); return; }
+      catch (e) { if (e && e.name === "AbortError") return; }
+    }
+    // 3) fallback (desktop): abre o WhatsApp Web já com a frase + link
+    window.open("https://wa.me/?text=" + encodeURIComponent(texto), "_blank");
+    toast("Sem compartilhamento nativo — abri o WhatsApp com o link.");
+  }
+
   function mountInicio() {
     const root = $("#s-inicio"); if (!root) return;
     const ev = C().evento, L = C().local || {};
@@ -208,6 +233,7 @@ window.App = (function () {
       el("button", { class: "indice", onclick: () => show("s-custos") }, ["Custos"]),
       el("button", { class: "indice", onclick: () => show("s-local") }, ["Local"]),
     ]));
+    card.appendChild(el("button", { class: "btn zap mt", onclick: compartilharConvite }, ["📲 Compartilhar convite no Whats"]));
     if (L.googleMapsUrl) card.appendChild(mapbtn("Como chegar", L.googleMapsUrl, "map-sm"));
     root.appendChild(card);
     // monta a bebedeira só depois do card no DOM (a animação usa getElementById)

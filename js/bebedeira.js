@@ -96,7 +96,8 @@ window.Bebedeira = (function () {
     function estado() {
       var p = Math.min(cervejas / META, 1);
       char.style.setProperty('--bb-drunk', p);
-      char.style.setProperty('--bb-tilt', (p * 10) + 'deg');
+      // 3° parado (já balança de leve, mostra que é animação) → 10° bêbado
+      char.style.setProperty('--bb-tilt', (3 + p * 7) + 'deg');
       char.style.setProperty('--bb-sway', (2.4 - p * 1.7) + 's');
     }
 

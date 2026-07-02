@@ -120,6 +120,7 @@ a { color: var(--amber-2); }
 .btn.guest   { background: linear-gradient(180deg, #4AA0CE, var(--acc-guest)); color: #06222F; }
 .btn.danger  { background: var(--punir); color: #fff; }
 .btn.ok      { background: var(--pago); color: #fff; }
+.btn.zap     { background: linear-gradient(180deg, #3ddd7a, #25D366); color: #06371c; }
 .btn.ghost   { background: transparent; border: 1px solid var(--line); box-shadow: none; }
 .btn.sm      { min-height: 46px; font-size: 15px; font-weight: 700; width: auto; padding: 0 16px; }
 .btn:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
