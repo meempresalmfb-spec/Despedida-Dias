@@ -170,6 +170,12 @@ window.Custos = (function () {
       cardD.appendChild(linha);
     });
 
+    // itens ainda não comprados (entram no rateio quando lançados)
+    const aComprar = cfgC().aComprar || [];
+    if (aComprar.length) {
+      cardD.appendChild(H.el("p", { class: "muted mt" }, ["🛒 Ainda será comprado (entra no rateio quando lançado): " + aComprar.join(", ") + "."]));
+    }
+
     if (ehMod) {
       const form = H.el("div", { class: "mt" }, [
         H.el("label", { class: "field" }, [H.el("span", {}, ["Descrição"]), H.el("input", { id: "cst-desc", placeholder: "Ex: gelo, carvão..." })]),

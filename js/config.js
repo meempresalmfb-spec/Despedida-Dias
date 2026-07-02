@@ -38,7 +38,13 @@ window.CONFIG = {
     despesasFixas: [
       { desc: "Chopp (Brahma Express)", valor: 2580.49, pagoPor: "Miguel", comprovante: "assets/comprovante-chopp.jpeg" },
       { desc: "Churrasqueiro (Wanderson)", valor: 400.00, pagoPor: "Miguel", comprovante: "assets/comprovante-churrasco.jpeg" },
+      { desc: "Diarista", valor: 500.00, pagoPor: "Miguel" },
+      { desc: "Manutenção da chácara", valor: 500.00, pagoPor: "Miguel" },
+      { desc: "Dupla sertaneja", valor: 850.00, pagoPor: "Miguel" },
+      { desc: "Fábio (cantor)", valor: 300.00, pagoPor: "Miguel" },
     ],
+    // Ainda serão comprados — aparecem como "a comprar" e entram no rateio quando lançados em despesasFixas.
+    aComprar: ["Carne", "Destilados"],
   },
 
   // ---- Local ----
@@ -61,7 +67,7 @@ window.CONFIG = {
     "Dias", "Miguel", "Igor Guerra", "Lucas Coelho", "Marcos P", "Matheus P.",
     "Sobras", "Igor G.", "Matheus Amaral", "Marcão", "Léo Honorato", "Cunha",
     "Claudim", "Rafinha", "Palitim", "Kisleu", "Caique", "Jhonny",
-    "Outro Marcos P.", "Palitão", "Murillo",
+    "Outro Marcos P.", "Palitão", "Murillo", "Fabio Filho",
   ],
 
   // ---- Firebase ----
