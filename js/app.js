@@ -204,7 +204,7 @@ window.App = (function () {
   }
   async function compartilharConvite() {
     const url = (location.origin + location.pathname).replace(/index\.html$/, "");
-    const texto = "🍺 Despedida do Dias — 04/07!\nAcessa o site especial da festa (jogos, placar de doses, custos e local):\n" + url;
+    const texto = "🍺 Despedida de Solteiro do Dias — sábado, 04/07!\nAcessa o site especial da festa e confira todas as informações:\n" + url;
     const data = { text: texto };
     // usa o poster JÁ pré-carregado — nada de await antes do share (por causa do iOS)
     if (posterFile && navigator.canShare && navigator.canShare({ files: [posterFile] })) {
