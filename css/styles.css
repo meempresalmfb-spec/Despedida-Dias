@@ -120,7 +120,6 @@ a { color: var(--amber-2); }
 .btn.guest   { background: linear-gradient(180deg, #4AA0CE, var(--acc-guest)); color: #06222F; }
 .btn.danger  { background: var(--punir); color: #fff; }
 .btn.ok      { background: var(--pago); color: #fff; }
-.btn.zap     { background: linear-gradient(180deg, #3ddd7a, #25D366); color: #06371c; }
 .btn.ghost   { background: transparent; border: 1px solid var(--line); box-shadow: none; }
 .btn.sm      { min-height: 46px; font-size: 15px; font-weight: 700; width: auto; padding: 0 16px; }
 .btn:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
@@ -177,6 +176,21 @@ label.field span { display: block; font-size: 13px; color: var(--txt-dim); margi
 .map-btn-wrapper.map-sm { box-shadow: 0 1px 4px rgba(40,33,18,.12); margin-top: 4px; }
 .map-sm .map-btn { padding: .55em 1.1em .55em 2.5em; font-size: 13px; font-weight: 600; }
 .map-sm .pinpoint { left: .8em; height: 52%; top: 24%; }
+
+/* pílula "Compartilhar no Whats" — mesmo formato compacto do "Como chegar" */
+.share-pill {
+  display: inline-flex; align-items: center; gap: 7px; width: auto;
+  margin-top: 14px; padding: .6em 1.2em;
+  border: none; border-radius: 50ch; cursor: pointer; text-decoration: none;
+  background: #25D366; color: #06371c;
+  font-family: var(--font-corpo); font-size: 13px; font-weight: 700; letter-spacing: .2px;
+  box-shadow: 0 2px 8px rgba(40,33,18,.14);
+  transition: transform .15s ease, filter .15s ease;
+}
+.share-pill:hover { filter: brightness(1.05); }
+.share-pill:active { transform: scale(.97); }
+.share-pill .share-ico { display: inline-flex; }
+.share-pill .share-ico svg { display: block; width: 17px; height: 17px; }
 
 /* ===== Botão "Como chegar" (Uiverse / dexter-st, adaptado p/ âmbar) ===== */
 .map-btn-wrapper {

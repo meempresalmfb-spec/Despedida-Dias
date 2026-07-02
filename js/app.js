@@ -233,7 +233,10 @@ window.App = (function () {
       el("button", { class: "indice", onclick: () => show("s-custos") }, ["Custos"]),
       el("button", { class: "indice", onclick: () => show("s-local") }, ["Local"]),
     ]));
-    card.appendChild(el("button", { class: "btn zap mt", onclick: compartilharConvite }, ["📲 Compartilhar convite no Whats"]));
+    card.appendChild(el("button", { class: "share-pill", onclick: compartilharConvite }, [
+      el("span", { class: "share-ico", html: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17.5 14.4c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.7.1-.2.3-.7.9-.9 1.1-.2.2-.3.2-.6.1-1.7-.8-2.8-1.5-3.9-3.4-.3-.5.3-.5.8-1.5.1-.2 0-.4 0-.5 0-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1.1 2.8 1.2 3c.1.2 2.1 3.2 5.1 4.5 1.9.8 2.6.9 3.5.8.6-.1 1.7-.7 1.9-1.4.2-.6.2-1.2.2-1.3-.1-.2-.3-.2-.6-.4zM12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.4 1.3 4.9L2 22l5.2-1.3c1.4.8 3 1.2 4.8 1.2 5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>' }),
+      "Compartilhar no Whats",
+    ]));
     if (L.googleMapsUrl) card.appendChild(mapbtn("Como chegar", L.googleMapsUrl, "map-sm"));
     root.appendChild(card);
     // monta a bebedeira só depois do card no DOM (a animação usa getElementById)
