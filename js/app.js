@@ -178,13 +178,15 @@ window.App = (function () {
     Local.mount(me, { el, $, namebtn, mapbtn });
     if (me.papel === "moderador") mountConfig();
     mountInicio();
-    mountJogosIntro();
+    renderJogos();
     show("s-inicio");
     // assina o ranking de doses (moderador incrementa no duelo, todos veem ao vivo)
     Sala.on("doses", (v) => {
       dosesCache = v || {};
       renderDoses();
     });
+    // portão dos jogos: só abre quando o moderador clica "Começar Jogos"
+    Sala.on("jogos/iniciado", (v) => { jogosIniciado = !!v; renderJogos(); });
     // atualiza header sub de tempos em tempos
     setInterval(() => { const s = $("#hdr-sub"); if (s) s.textContent = contagemTxt(); }, 60000);
   }
@@ -208,15 +210,46 @@ window.App = (function () {
     if (L.googleMapsUrl) card.appendChild(mapbtn("Como chegar", L.googleMapsUrl, "map-sm"));
     root.appendChild(card);
   }
-  function mountJogosIntro() {
-    const root = $("#jogos-intro"); if (!root) return;
-    root.innerHTML = "";
-    root.appendChild(el("div", { class: "card" }, [
-      el("h2", {}, ["Como funciona"]),
-      el("p", { class: "muted" }, ["O moderador sorteia uma dupla e uma pergunta e lê em voz alta. Quem errar (ou não souber) bebe."]),
-      el("p", { class: "muted" }, ["O moderador toca em quem bebeu e a dose entra no ranking na hora."]),
-      el("p", { class: "muted" }, ["O ranking de doses fica aqui embaixo e atualiza ao vivo pra todo mundo. 🍺"]),
-    ]));
+  // ---------- portão "Começar Jogos" (moderador libera pra todos) ----------
+  let jogosIniciado = false;
+  function comecarJogos() {
+    if (!confirm("Começar os jogos? Isso ZERA o placar de doses e o duelo pra todo mundo (limpa os testes).")) return;
+    Sala.resetJogos().then(() => Sala.set("jogos/iniciado", true)).then(() => toast("Jogos começaram! 🍻"));
+  }
+  function encerrarJogos() {
+    if (!confirm("Voltar pra tela de espera? O placar continua salvo (não zera).")) return;
+    Sala.set("jogos/iniciado", false);
+  }
+  function renderJogos() {
+    const intro = $("#jogos-intro"); if (!intro) return;
+    const dueloSec = $("#s-duelo"), dosesSec = $("#s-doses");
+    intro.innerHTML = "";
+    if (!jogosIniciado) {
+      // ANTES de começar: só a explicação (+ botão pro moderador)
+      const card = el("div", { class: "card" }, [
+        el("h2", {}, ["Os jogos"]),
+        el("p", { class: "muted" }, ["Duelo de perguntas: o moderador sorteia uma dupla e uma pergunta e lê em voz alta. Quem errar (ou não souber) bebe uma dose."]),
+        el("p", { class: "muted" }, ["O moderador marca quem bebeu e o ranking de doses sobe ao vivo pra todo mundo. 🍺"]),
+      ]);
+      if (me.papel === "moderador") {
+        card.appendChild(el("button", { class: "btn primary mt", onclick: comecarJogos }, ["🍻 Começar Jogos"]));
+        card.appendChild(el("p", { class: "muted center mt" }, ["Pode testar à vontade antes — “Começar” zera tudo e larga do zero."]));
+      } else {
+        card.appendChild(el("p", { class: "center mt", style: "font-weight:800;color:var(--acc-guest)" }, ["Aguarde o moderador começar os jogos. 🍻"]));
+      }
+      intro.appendChild(card);
+      if (dueloSec) dueloSec.classList.add("hidden");
+      if (dosesSec) dosesSec.classList.add("hidden");
+    } else {
+      // DEPOIS de começar: mostra o duelo + ranking (moderador tem "Encerrar")
+      if (me.papel === "moderador") {
+        intro.appendChild(el("div", { class: "row", style: "justify-content:flex-end;margin:2px 0 6px" }, [
+          el("button", { class: "btn sm ghost", style: "width:auto", onclick: encerrarJogos }, ["Encerrar jogos"]),
+        ]));
+      }
+      if (dueloSec) dueloSec.classList.remove("hidden");
+      if (dosesSec) dosesSec.classList.remove("hidden");
+    }
   }
   function mountConfig() {
     const root = $("#s-config"); root.innerHTML = "";
