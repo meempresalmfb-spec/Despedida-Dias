@@ -19,6 +19,8 @@ window.App = (function () {
     return e;
   }
   const money = (n) => "R$ " + (Number(n) || 0).toFixed(2).replace(".", ",");
+  const slugify = (s) => (s || "").toString().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   function namebtn(title, text, green) {
     return el("button", { class: "namebtn" + (green ? " on" : ""), type: "button" }, [
       el("span", {}),
@@ -112,52 +114,53 @@ window.App = (function () {
     });
   }
 
-  // ---------- placar de doses ----------
-  let jogadoresCache = {};
+  // ---------- ranking de doses (por nome, da lista de confirmados) ----------
+  let dosesCache = {};
+  function pessoasRanking() {
+    return (C().participantes || []).map((n) => ({ nome: n, slug: slugify(n) })).filter((p) => p.slug);
+  }
   function mountDoses() {
     const root = $("#s-doses"); root.innerHTML = "";
-    const card = el("div", { class: "card" }, [el("h2", {}, ["Placar de doses"])]);
+    const card = el("div", { class: "card" }, [el("h2", {}, ["Ranking de doses"])]);
     const lista = el("div", { class: "placar", id: "placar-lista" });
     card.appendChild(lista);
-    if (me.papel === "moderador") card.appendChild(el("p", { class: "muted mt" }, ["Toque + / − pra ajustar. (Só você edita.)"]));
+    if (me.papel === "moderador") card.appendChild(el("p", { class: "muted mt" }, ["Toque + / − pra ajustar manualmente. (O duelo já soma sozinho.)"]));
     root.appendChild(card);
     renderDoses();
   }
   function renderDoses() {
     const lista = $("#placar-lista"); if (!lista) return;
     lista.innerHTML = "";
-    const arr = Object.keys(jogadoresCache).map((k) => ({ uid: k, ...jogadoresCache[k] }))
-      .sort((a, b) => (b.doses || 0) - (a.doses || 0) || (a.nome || "").localeCompare(b.nome || ""));
-    if (!arr.length) { lista.appendChild(el("p", { class: "muted" }, ["Ninguém conectado ainda."])); return; }
-    arr.forEach((j) => {
-      const linha = el("div", { class: "linha" }, [
-        el("span", { class: "conn-dot " + (j.conectado ? "on" : "") }),
-        namebtn(j.nome || "?", String(j.doses || 0)),
+    const arr = pessoasRanking().map((p) => ({ ...p, doses: dosesCache[p.slug] || 0 }))
+      .sort((a, b) => (b.doses - a.doses) || a.nome.localeCompare(b.nome));
+    if (!arr.length) { lista.appendChild(el("p", { class: "muted" }, ["Sem participantes no config."])); return; }
+    const meuSlug = me.papel === "convidado" ? slugify(me.nome) : null;
+    arr.forEach((j, i) => {
+      const ehEu = meuSlug && j.slug === meuSlug;
+      const linha = el("div", { class: "linha" + (ehEu ? " eu" : "") }, [
+        el("span", { class: "rk" }, [String(i + 1)]),
+        el("span", { class: "nome" }, [j.nome + (ehEu ? " (você)" : "")]),
       ]);
       if (me.papel === "moderador") {
-        linha.appendChild(el("button", { class: "btn sm ghost", onclick: () => mudaDose(j.uid, -1) }, ["−"]));
-        linha.appendChild(el("span", { class: "pts" }, [String(j.doses || 0)]));
-        linha.appendChild(el("button", { class: "btn sm primary", onclick: () => mudaDose(j.uid, +1) }, ["+"]));
+        linha.appendChild(el("button", { class: "btn sm ghost", onclick: () => mudaDose(j.slug, -1) }, ["−"]));
+        linha.appendChild(el("span", { class: "pts" }, [String(j.doses)]));
+        linha.appendChild(el("button", { class: "btn sm primary", onclick: () => mudaDose(j.slug, +1) }, ["+"]));
       } else {
-        linha.appendChild(el("span", { class: "pts" }, [String(j.doses || 0)]));
+        linha.appendChild(el("span", { class: "pts" }, [String(j.doses)]));
       }
       lista.appendChild(linha);
     });
   }
-  function mudaDose(u, d) {
-    const atual = (jogadoresCache[u] && jogadoresCache[u].doses) || 0;
-    Sala.update("jogadores/" + u, { doses: Math.max(0, atual + d) });
+  function mudaDose(s, d) {
+    const atual = dosesCache[s] || 0;
+    Sala.update("doses", { [s]: Math.max(0, atual + d) });
   }
 
   // ---------- entrada / papéis ----------
   function entrarConvidado(nome) {
     me.papel = "convidado"; me.nome = nome.trim();
     localStorage.setItem("modo", "convidado"); localStorage.setItem("meuNome", me.nome);
-    Sala.get("jogadores/" + me.uid).then((cur) => {
-      Sala.presenca("jogadores/" + me.uid, {
-        nome: me.nome, conectado: true, papel: "convidado", doses: (cur && cur.doses) || 0,
-      });
-    });
+    // ranking é por nome (lista de confirmados) — convidado não precisa registrar presença.
     iniciarSessao();
   }
   function entrarModerador() {
@@ -170,19 +173,17 @@ window.App = (function () {
     document.body.dataset.role = me.papel;
     $("#tabbar").classList.remove("hidden");
     mountDoses();
-    Duelo.mount(me, { el, $, show, toast, money, namebtn, mapbtn, jogadores: () => jogadoresCache });
+    Duelo.mount(me, { el, $, toast, doses: () => dosesCache });
     Custos.mount(me, { el, $, toast, money, namebtn, mapbtn });
     Local.mount(me, { el, $, namebtn, mapbtn });
     if (me.papel === "moderador") mountConfig();
     mountInicio();
     mountJogosIntro();
     show("s-inicio");
-    // assina jogadores (placar + duelo + custos usam)
-    Sala.on("jogadores", (v) => {
-      jogadoresCache = v || {};
+    // assina o ranking de doses (moderador incrementa no duelo, todos veem ao vivo)
+    Sala.on("doses", (v) => {
+      dosesCache = v || {};
       renderDoses();
-      if (window.Duelo && Duelo.onJogadores) Duelo.onJogadores(jogadoresCache);
-      if (window.Custos && Custos.onJogadores) Custos.onJogadores(jogadoresCache);
     });
     // atualiza header sub de tempos em tempos
     setInterval(() => { const s = $("#hdr-sub"); if (s) s.textContent = contagemTxt(); }, 60000);
@@ -212,9 +213,9 @@ window.App = (function () {
     root.innerHTML = "";
     root.appendChild(el("div", { class: "card" }, [
       el("h2", {}, ["Como funciona"]),
-      el("p", { class: "muted" }, ["O moderador sorteia uma dupla e uma pergunta. No “JÁ!”, os dois apertam o buzzer o mais rápido possível — quem reage mais rápido é quem responde."]),
-      el("p", { class: "muted" }, ["Acertou: o outro bebe. Errou: bebe quem respondeu. Apertar ANTES do “JÁ!” é queima de largada (bebe também)."]),
-      el("p", { class: "muted" }, ["O ranking de doses fica aqui embaixo e atualiza ao vivo."]),
+      el("p", { class: "muted" }, ["O moderador sorteia uma dupla e uma pergunta e lê em voz alta. Quem errar (ou não souber) bebe."]),
+      el("p", { class: "muted" }, ["O moderador toca em quem bebeu e a dose entra no ranking na hora."]),
+      el("p", { class: "muted" }, ["O ranking de doses fica aqui embaixo e atualiza ao vivo pra todo mundo. 🍺"]),
     ]));
   }
   function mountConfig() {

@@ -317,6 +317,8 @@ label.field span { display: block; font-size: 13px; color: var(--txt-dim); margi
 .duelo-vs .lutador.vencedor { border-color: var(--amber); background: var(--amber-soft); box-shadow: 0 0 0 2px rgba(198,40,40,.3) inset; }
 .duelo-vs .lutador.queimou { border-color: var(--punir); background: rgba(199,56,45,.06); }
 .duelo-vs .lutador.queimou .tempo { color: var(--punir); font-size: 15px; }
+.duelo-vs .lutador.bebeu { border-color: var(--punir); background: rgba(199,56,45,.08); box-shadow: 0 0 0 2px rgba(199,56,45,.3) inset; }
+.duelo-vs .lutador.bebeu .nome { color: var(--punir); }
 .duelo-vs .vs { font-family: var(--font-titulo); font-size: 24px; color: var(--txt-dim); }
 
 .gabarito {
@@ -358,6 +360,9 @@ label.field span { display: block; font-size: 13px; color: var(--txt-dim); margi
   border-radius: var(--r-sm); padding: 10px 14px;
 }
 .placar .linha .nome { flex: 1; font-weight: 700; }
+.placar .linha .rk { font-family: var(--font-titulo); color: var(--txt-dim); min-width: 24px; text-align: center; font-size: 17px; letter-spacing: .5px; }
+.placar .linha.eu { border-color: var(--acc-guest); background: rgba(46,125,174,.08); }
+.placar .linha.eu .nome { color: var(--acc-guest); }
 .placar .linha .pts { font-family: var(--font-titulo); font-size: 22px; color: var(--amber-2); min-width: 30px; text-align: center; }
 .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--line); }
 .dot.on { background: var(--pago); box-shadow: 0 0 8px rgba(46,139,74,.5); }
