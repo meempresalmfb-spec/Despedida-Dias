@@ -196,7 +196,8 @@ window.App = (function () {
     const ev = C().evento, L = C().local || {};
     root.innerHTML = "";
     const card = el("div", { class: "card inicio-card" }, []);
-    if (ev.fotoMatheus) card.appendChild(el("img", { class: "hero-foto", src: ev.fotoMatheus, alt: ev.noivo || "", onerror: function () { this.style.display = "none"; } }));
+    const bbHost = el("div", { class: "bb-host" });   // brinquedo da bebedeira (substitui a foto redonda)
+    card.appendChild(bbHost);
     card.appendChild(el("h2", { class: "inicio-titulo" }, [ev.nome || "Despedida"]));
     card.appendChild(el("p", { class: "quando" }, [dataEntrada(ev)]));
     if (L.nomeLugar || L.endereco) card.appendChild(el("p", { class: "onde" }, [[L.nomeLugar, L.endereco].filter(Boolean).join(" · ")]));
@@ -209,6 +210,9 @@ window.App = (function () {
     ]));
     if (L.googleMapsUrl) card.appendChild(mapbtn("Como chegar", L.googleMapsUrl, "map-sm"));
     root.appendChild(card);
+    // monta a bebedeira só depois do card no DOM (a animação usa getElementById)
+    if (window.Bebedeira) Bebedeira.mount(bbHost);
+    else if (ev.fotoMatheus) bbHost.appendChild(el("img", { class: "hero-foto", src: ev.fotoMatheus, alt: ev.noivo || "", onerror: function () { this.style.display = "none"; } }));
   }
   // ---------- portão "Começar Jogos" (moderador libera pra todos) ----------
   let jogosIniciado = false;
