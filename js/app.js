@@ -193,7 +193,8 @@ window.App = (function () {
 
   // ---------- compartilhar convite (poster + frase + link) ----------
   async function compartilharConvite() {
-    const url = "https://despedidadias.netlify.app/";
+    // pega o endereço de onde o site estiver hospedado (não fica preso a um host)
+    const url = (location.origin + location.pathname).replace(/index\.html$/, "");
     const texto = "🍺 Despedida do Dias — 04/07!\nAcessa o site especial da festa (jogos, placar de doses, custos e local):\n" + url;
     let file = null;
     try {
