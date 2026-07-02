@@ -192,29 +192,31 @@ window.App = (function () {
   }
 
   // ---------- compartilhar convite (poster + frase + link) ----------
+  let posterFile = null;
+  function preloadPoster() {
+    // pré-carrega o poster como File ANTES do clique. iOS/Safari exige que o
+    // navigator.share() rode no mesmo gesto do toque, SEM await de fetch no meio —
+    // senão a imagem é descartada e vai só o texto.
+    if (posterFile) return;
+    fetch("assets/poster.jpg").then((r) => (r.ok ? r.blob() : null)).then((b) => {
+      if (b) posterFile = new File([b], "despedida-do-dias.jpg", { type: b.type || "image/jpeg" });
+    }).catch(() => {});
+  }
   async function compartilharConvite() {
-    // pega o endereço de onde o site estiver hospedado (não fica preso a um host)
     const url = (location.origin + location.pathname).replace(/index\.html$/, "");
     const texto = "🍺 Despedida do Dias — 04/07!\nAcessa o site especial da festa (jogos, placar de doses, custos e local):\n" + url;
-    let file = null;
-    try {
-      const resp = await fetch("assets/poster.jpg");
-      const blob = await resp.blob();
-      file = new File([blob], "despedida-do-dias.jpg", { type: blob.type || "image/jpeg" });
-    } catch (e) { /* segue sem imagem */ }
-    // 1) compartilhamento nativo COM o poster (melhor no celular → WhatsApp, etc.)
-    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
-      try { await navigator.share({ files: [file], text: texto }); return; }
-      catch (e) { if (e && e.name === "AbortError") return; }
+    const data = { text: texto };
+    // usa o poster JÁ pré-carregado — nada de await antes do share (por causa do iOS)
+    if (posterFile && navigator.canShare && navigator.canShare({ files: [posterFile] })) {
+      data.files = [posterFile];
     }
-    // 2) compartilhamento nativo só com texto + link
     if (navigator.share) {
-      try { await navigator.share({ text: texto, url: url }); return; }
+      try { await navigator.share(data); return; }
       catch (e) { if (e && e.name === "AbortError") return; }
     }
-    // 3) fallback (desktop): abre o WhatsApp Web já com a frase + link
+    // fallback (desktop / sem share nativo): WhatsApp Web com a frase + link
     window.open("https://wa.me/?text=" + encodeURIComponent(texto), "_blank");
-    toast("Sem compartilhamento nativo — abri o WhatsApp com o link.");
+    toast("No PC vai só o link — no celular o poster vai junto.");
   }
 
   function mountInicio() {
@@ -238,6 +240,7 @@ window.App = (function () {
       el("span", { class: "share-ico", html: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17.5 14.4c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.7.1-.2.3-.7.9-.9 1.1-.2.2-.3.2-.6.1-1.7-.8-2.8-1.5-3.9-3.4-.3-.5.3-.5.8-1.5.1-.2 0-.4 0-.5 0-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1.1 2.8 1.2 3c.1.2 2.1 3.2 5.1 4.5 1.9.8 2.6.9 3.5.8.6-.1 1.7-.7 1.9-1.4.2-.6.2-1.2.2-1.3-.1-.2-.3-.2-.6-.4zM12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.4 1.3 4.9L2 22l5.2-1.3c1.4.8 3 1.2 4.8 1.2 5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>' }),
       "Compartilhar no Whats",
     ]));
+    preloadPoster();   // deixa o poster pronto pro iOS mandar junto no compartilhar
     if (L.googleMapsUrl) card.appendChild(mapbtn("Como chegar", L.googleMapsUrl, "map-sm"));
     root.appendChild(card);
     // monta a bebedeira só depois do card no DOM (a animação usa getElementById)
