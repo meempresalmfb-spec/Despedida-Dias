@@ -54,10 +54,21 @@ window.Custos = (function () {
   }
   const totalFesta = () => todas().reduce((s, d) => s + (Number(d.valor) || 0), 0);
   function perHead() { const n = pessoasRateio().length; return n ? totalFesta() / n : 0; }
-  const pago = (id) => ehReceb(id) || !!(statusNome[id] && statusNome[id].pago);
-  // total que os outros devem ao recebedor, e quanto já voltou
+  // estado de pagamento por pessoa: quitado / parcial / deve tudo, guardando o valor já pago (valorPago).
+  // back-compat: registro antigo { pago:true } sem valor = quitado (pagou a parte cheia).
+  function pagoInfo(id) {
+    const total = deve(id);
+    const st = statusNome[id] || {};
+    let vpago = Number(st.valorPago);
+    if (isNaN(vpago)) vpago = st.pago ? total : 0;
+    const quitado = st.pago === true || vpago >= total - 0.005;
+    const parcial = !quitado && vpago > 0.005;
+    return { total, vpago, quitado, parcial, falta: Math.max(0, total - vpago) };
+  }
+  const pago = (id) => ehReceb(id) || pagoInfo(id).quitado;
+  // total que os outros devem ao recebedor, e quanto já voltou (soma do que cada um efetivamente pagou)
   const aReceber = () => pessoasRateio().filter((p) => !ehReceb(p.id)).reduce((s, p) => s + deve(p.id), 0);
-  const arrecadado = () => pessoasRateio().filter((p) => !ehReceb(p.id) && pago(p.id)).reduce((s, p) => s + deve(p.id), 0);
+  const arrecadado = () => pessoasRateio().filter((p) => !ehReceb(p.id)).reduce((s, p) => s + pagoInfo(p.id).vpago, 0);
 
   function mount(_me, _H) {
     me = _me; H = _H;
@@ -82,10 +93,29 @@ window.Custos = (function () {
     H.toast("Despesa adicionada.");
   }
   function rmDespesa(id) { if (confirm("Remover despesa?")) Sala.remove("custos/despesas/" + id); }
-  function togglePago(id) {
-    const novo = !(statusNome[id] && statusNome[id].pago);
-    Sala.update("custos/statusNome/" + id, { pago: novo });
-    H.toast(nomeDe(id) + (novo ? " marcado PAGO" : " desmarcado"));
+  function registrarPagamento(id) {
+    const total = deve(id);
+    const info = pagoInfo(id);
+    const resp = prompt(
+      nomeDe(id) + " — quanto já pagou?\nParte dele(a): " + H.money(total) +
+      "\n\n• Digite o valor pago (ex: 260 ou 260,50)\n• \"ok\" = quitou (pagou tudo)\n• vazio ou 0 = deve tudo",
+      info.vpago ? info.vpago.toFixed(2).replace(".", ",") : ""
+    );
+    if (resp === null) return;
+    const s = resp.trim().toLowerCase();
+    let v;
+    if (s === "" || s === "0") v = 0;
+    else if (["ok", "tudo", "quitar", "quitou", "pago"].includes(s)) v = total;
+    else {
+      let norm = s.replace(/\s/g, "");
+      if (norm.indexOf(",") >= 0) norm = norm.replace(/\./g, "").replace(",", ".");
+      v = parseFloat(norm);
+    }
+    if (isNaN(v) || v < 0) { H.toast("Valor inválido."); return; }
+    v = Math.round(v * 100) / 100;
+    const quitado = v >= total - 0.005;
+    Sala.update("custos/statusNome/" + id, { valorPago: v, pago: quitado });
+    H.toast(nomeDe(id) + ": pago " + H.money(v) + (quitado ? " (quitado)" : " · falta " + H.money(Math.max(0, total - v))));
   }
   function copiarPix() {
     const chave = cfgC().chavePix || "";
@@ -134,20 +164,32 @@ window.Custos = (function () {
     if (!pessoas.length) lista.appendChild(H.el("p", { class: "muted" }, ["Sem lista de confirmados no config."]));
     pessoas.forEach((p) => {
       const isReceb = ehReceb(p.id);
-      const pg = !isReceb && !!(statusNome[p.id] && statusNome[p.id].pago);
-      const linha = H.el("div", { class: "pessoa" + (pg ? " pago" : "") }, [
-        H.namebtn(p.nome + (isReceb ? " (recebe)" : ""), isReceb ? "recebe" : (pg ? "pago" : "deve"), pg),
-        H.el("span", { class: "deve" }, [isReceb ? "adiantou" : H.money(deve(p.id))]),
+      const info = pagoInfo(p.id);
+      const cls = isReceb ? "" : (info.quitado ? " pago" : (info.parcial ? " parcial" : ""));
+      const tag = isReceb ? "recebe" : (info.quitado ? "pago" : (info.parcial ? "parcial" : "deve"));
+      let right;
+      if (isReceb) right = H.el("span", { class: "deve" }, ["adiantou"]);
+      else if (info.quitado) right = H.el("span", { class: "deve ok" }, ["pago " + H.money(info.vpago)]);
+      else if (info.parcial) right = H.el("div", { class: "deve parc" }, [
+        H.el("b", {}, ["falta " + H.money(info.falta)]),
+        H.el("span", { class: "sub" }, ["pago " + H.money(info.vpago)]),
+      ]);
+      else right = H.el("span", { class: "deve" }, [H.money(info.total)]);
+      const linha = H.el("div", { class: "pessoa" + cls }, [
+        H.namebtn(p.nome + (isReceb ? " (recebe)" : ""), tag, info.quitado),
+        right,
       ]);
       if (ehMod && !isReceb) {
         linha.style.cursor = "pointer";
-        linha.addEventListener("click", () => togglePago(p.id));
+        linha.addEventListener("click", () => registrarPagamento(p.id));
       }
       lista.appendChild(linha);
     });
     cardP.appendChild(lista);
     cardP.appendChild(H.el("p", { class: "muted mt" }, [
-      ehMod ? "Toque no nome pra marcar/desmarcar PAGO." : "Verde = já acertou com o " + (cfgC().nomeRecebedor || "organizador") + ".",
+      ehMod
+        ? "Toque no nome pra lançar quanto a pessoa já pagou (aceita valor parcial)."
+        : "Verde = quitou · amarelo = pagou parte (falta o resto) · sem cor = deve tudo. Você acerta com o " + (cfgC().nomeRecebedor || "organizador") + ".",
     ]));
     root.appendChild(cardP);
 

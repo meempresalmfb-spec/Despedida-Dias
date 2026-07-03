@@ -15,6 +15,7 @@
   --amber-soft: #FCE4E4; /* fundo de realce suave */
   --punir:      #C7382D;
   --pago:       #2E8B4A;
+  --parcial:    #B26A00; /* pagamento parcial (âmbar/mostarda) */
   --line:       #E4DECF;
 
   /* acentos por papel */
@@ -404,8 +405,14 @@ label.field span { display: block; font-size: 13px; color: var(--txt-dim); margi
 }
 .pessoa.pago { border-left-color: var(--pago); background: rgba(46,139,74,.06); }
 .pessoa.pago .nome { color: var(--pago); }
+.pessoa.parcial { border-left-color: var(--parcial); background: rgba(178,106,0,.07); }
+.pessoa.parcial .nome { color: var(--parcial); }
 .pessoa .nome { flex: 1; font-weight: 700; }
-.pessoa .deve { font-weight: 800; }
+.pessoa .deve { font-weight: 800; white-space: nowrap; }
+.pessoa .deve.ok { color: var(--pago); }
+.pessoa .deve.parc { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.12; text-align: right; }
+.pessoa .deve.parc b { color: var(--parcial); font-weight: 800; }
+.pessoa .deve.parc .sub { font-weight: 700; font-size: 12px; color: var(--txt-dim); }
 .pessoa .check { font-size: 20px; width: 26px; text-align: center; }
 
 .despesa {
