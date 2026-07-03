@@ -41,7 +41,7 @@ window.CONFIG = {
       { desc: "Churrasqueiro (Wanderson)", valor: 400.00, pagoPor: "Miguel", comprovante: "assets/comprovante-churrasco.jpeg" },
       // Carnes + verduras do churrasco (4 notas somadas): Império 223,35 + açougue 345,71 + Meia Ponte 198,97 + hortifruti 71,11.
       { desc: "Carne + verduras (churrasco)", valor: 839.14, pagoPor: "Miguel", comprovante: "assets/comprovante-carne.html" },
-      { desc: "Diarista", valor: 500.00, pagoPor: "Miguel" },
+      { desc: "Diarista — 2 diárias de R$ 250 (pré e pós)", valor: 500.00, pagoPor: "Miguel" },
       { desc: "Manutenção da chácara", valor: 500.00, pagoPor: "Miguel" },
       { desc: "Dupla sertaneja", valor: 850.00, pagoPor: "Miguel" },
       { desc: "Fábio (cantor)", valor: 300.00, pagoPor: "Miguel" },
@@ -71,7 +71,7 @@ window.CONFIG = {
     "Dias", "Miguel", "Igor Guerra", "Lucas Coelho", "Marcos P", "Matheus P.",
     "Sobras", "Igor G.", "Matheus Amaral", "Marcão", "Léo Honorato", "Cunha",
     "Claudim", "Rafinha", "Palitim", "Kisleu", "Caique", "Jhonny",
-    "Outro Marcos P.", "Palitão", "Murillo", "Fabio Filho", "Antônio (pai do Dias)",
+    "Outro Marcos P.", "Palitão", "Murillo", "Fabio Filho", "Antônio (pai)",
   ],
 
   // ---- Firebase ----
