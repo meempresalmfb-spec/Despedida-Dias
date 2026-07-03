@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#F3EFE6" />
+  <title>Comprovantes — Carne + Verduras</title>
+  <style>
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: #F3EFE6; color: #2b2620;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      padding: 20px 14px 48px;
+    }
+    .wrap { max-width: 640px; margin: 0 auto; }
+    h1 { font-size: 1.35rem; margin: 0 0 4px; letter-spacing: .3px; }
+    .muted { color: #7a7266; font-size: .9rem; margin: 0 0 18px; }
+    .total-box {
+      background: #b5432f; color: #fff; border-radius: 16px;
+      padding: 16px 18px; margin-bottom: 18px;
+      box-shadow: 0 6px 18px rgba(0,0,0,.12);
+    }
+    .total-box .lbl { font-size: .82rem; opacity: .85; text-transform: uppercase; letter-spacing: 1px; }
+    .total-box .val { font-size: 2rem; font-weight: 800; margin-top: 2px; }
+    .total-box .sub { font-size: .82rem; opacity: .85; margin-top: 4px; }
+    table.notas { width: 100%; border-collapse: collapse; margin-bottom: 26px; background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,.06); }
+    table.notas td { padding: 11px 13px; border-bottom: 1px solid #eee3d3; font-size: .92rem; vertical-align: top; }
+    table.notas tr:last-child td { border-bottom: none; }
+    table.notas .loja { font-weight: 700; }
+    table.notas .itens { color: #7a7266; font-size: .8rem; display: block; margin-top: 2px; }
+    table.notas .vl { text-align: right; white-space: nowrap; font-weight: 700; }
+    .nota { margin: 0 0 26px; }
+    .nota h2 { font-size: 1rem; margin: 0 0 8px; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+    .nota h2 .p { color: #b5432f; font-weight: 800; white-space: nowrap; }
+    .nota img { width: 100%; height: auto; border-radius: 12px; box-shadow: 0 3px 12px rgba(0,0,0,.14); display: block; }
+    footer { text-align: center; color: #9a9284; font-size: .8rem; margin-top: 30px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Comprovantes — Carne + Verduras</h1>
+    <p class="muted">Compras do churrasco · 03/07/2026</p>
+
+    <div class="total-box">
+      <div class="lbl">Total das compras</div>
+      <div class="val">R$ 839,14</div>
+      <div class="sub">4 notas · carnes, frango, verduras, carvão e descartáveis</div>
+    </div>
+
+    <table class="notas">
+      <tr>
+        <td class="loja">1. Império Carne
+          <span class="itens">Calabresa, linguiça de frango, toscana, bacon, cupim</span>
+        </td>
+        <td class="vl">R$ 223,35</td>
+      </tr>
+      <tr>
+        <td class="loja">2. Açougue
+          <span class="itens">Picanha, fraldinha, coração e meio da asa de frango</span>
+        </td>
+        <td class="vl">R$ 345,71</td>
+      </tr>
+      <tr>
+        <td class="loja">3. Comercial Meia Ponte
+          <span class="itens">Frango, mussarela, arroz, farinha, sal, óleo, maionese, carvão, copo/papel</span>
+        </td>
+        <td class="vl">R$ 198,97</td>
+      </tr>
+      <tr>
+        <td class="loja">4. Hortifruti (Pro Brazilian)
+          <span class="itens">Limão, cebola, pimenta, tomate, couve, feijão, cheiro-verde, abacaxi</span>
+        </td>
+        <td class="vl">R$ 71,11</td>
+      </tr>
+    </table>
+
+    <div class="nota">
+      <h2>1. Império Carne <span class="p">R$ 223,35</span></h2>
+      <img src="comprovante-carne-1-imperio.jpeg" alt="Nota Império Carne" loading="lazy" />
+    </div>
+    <div class="nota">
+      <h2>2. Açougue <span class="p">R$ 345,71</span></h2>
+      <img src="comprovante-carne-2-acougue.jpeg" alt="Nota do açougue" loading="lazy" />
+    </div>
+    <div class="nota">
+      <h2>3. Comercial Meia Ponte <span class="p">R$ 198,97</span></h2>
+      <img src="comprovante-carne-3-meiaponte.jpeg" alt="Nota Comercial Meia Ponte" loading="lazy" />
+    </div>
+    <div class="nota">
+      <h2>4. Hortifruti <span class="p">R$ 71,11</span></h2>
+      <img src="comprovante-carne-4-hortifruti.jpeg" alt="Nota do hortifruti" loading="lazy" />
+    </div>
+
+    <footer>Despedida do Dias · comprovantes das carnes</footer>
+  </div>
+</body>
+</html>

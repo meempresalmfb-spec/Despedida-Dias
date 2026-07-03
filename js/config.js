@@ -39,13 +39,16 @@ window.CONFIG = {
       // Igor G. e Claudim não bebem chopp → ficam de fora do rateio DESTE item (o valor se redistribui entre os outros).
       { desc: "Chopp (Brahma Express)", valor: 2580.49, pagoPor: "Miguel", comprovante: "assets/comprovante-chopp.jpeg", exclui: ["Igor G.", "Claudim"] },
       { desc: "Churrasqueiro (Wanderson)", valor: 400.00, pagoPor: "Miguel", comprovante: "assets/comprovante-churrasco.jpeg" },
+      // Carnes + verduras do churrasco (4 notas somadas): Império 223,35 + açougue 345,71 + Meia Ponte 198,97 + hortifruti 71,11.
+      { desc: "Carne + verduras (churrasco)", valor: 839.14, pagoPor: "Miguel", comprovante: "assets/comprovante-carne.html" },
       { desc: "Diarista", valor: 500.00, pagoPor: "Miguel" },
       { desc: "Manutenção da chácara", valor: 500.00, pagoPor: "Miguel" },
       { desc: "Dupla sertaneja", valor: 850.00, pagoPor: "Miguel" },
       { desc: "Fábio (cantor)", valor: 300.00, pagoPor: "Miguel" },
     ],
     // Ainda serão comprados — aparecem como "a comprar" e entram no rateio quando lançados em despesasFixas.
-    aComprar: ["Carne", "Destilados"],
+    // (Carne já comprada; destilados não serão comprados.)
+    aComprar: [],
   },
 
   // ---- Local ----
@@ -68,7 +71,7 @@ window.CONFIG = {
     "Dias", "Miguel", "Igor Guerra", "Lucas Coelho", "Marcos P", "Matheus P.",
     "Sobras", "Igor G.", "Matheus Amaral", "Marcão", "Léo Honorato", "Cunha",
     "Claudim", "Rafinha", "Palitim", "Kisleu", "Caique", "Jhonny",
-    "Outro Marcos P.", "Palitão", "Murillo", "Fabio Filho",
+    "Outro Marcos P.", "Palitão", "Murillo", "Fabio Filho", "Antônio (pai do Dias)",
   ],
 
   // ---- Firebase ----
